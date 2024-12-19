@@ -44,6 +44,7 @@ func OssSTS() (results interface{}, err error) {
 }
 
 func Upload(file *multipart.FileHeader, ctx *gin.Context) (results interface{}, err error) {
+	//1.设置文件名、存储目录等基础信息
 	//如果文件大小超过maxMemory,则使用临时文件来存储multipart/form中文件数据
 	err = ctx.Request.ParseMultipartForm(128)
 	if err != nil {
@@ -77,6 +78,7 @@ func Upload(file *multipart.FileHeader, ctx *gin.Context) (results interface{}, 
 		}
 	}
 	dst := filepath.ToSlash(method.Path + "/" + fileName)
+	//2.保存上传的文件
 	err = ctx.SaveUploadedFile(file, dst)
 	if err != nil {
 		global.Logger.Errorf("保存文件失败-保存路径为：%s ,错误原因 : %s", dst, err.Error())

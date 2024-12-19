@@ -19,6 +19,8 @@ func (v *VideoRouter) InitVideoRouter(Router *gin.RouterGroup) {
 		contributionRouterNoVerification.POST("/getVideoComment", contributionControllers.GetVideoComment)
 		contributionRouterNoVerification.POST("/getVideoCommentCountById", contributionControllers.GetVideoCommentCountById)
 
+		//给评论点赞，先不需要登录
+		contributionRouterNoVerification.POST("/likeVideoComment", contributionControllers.LikeVideoComment)
 	}
 	//非必须登入
 	contributionRouterNotNecessary := Router.Group("contribution").Use(middlewares.VerificationTokenNotNecessary())

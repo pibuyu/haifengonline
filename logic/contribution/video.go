@@ -55,7 +55,7 @@ func GetTop2HeatVideos() (results video.VideosContributionList, err error) {
 
 // CreateVideoContribution 定时逻辑在上一层的调用函数里
 func CreateVideoContribution(data *receive.CreateVideoContributionReceiveStruct, uid uint) (results interface{}, err error) {
-	//发布视频
+	// 1.处理视频在数据库里的基本信息
 	videoSrc, _ := json.Marshal(common.Img{
 		Src: data.Video,
 		Tp:  data.VideoUploadType,
@@ -94,18 +94,18 @@ func CreateVideoContribution(data *receive.CreateVideoContributionReceiveStruct,
 	if data.Media != nil {
 		videoContribution.MediaID = *data.Media
 	}
-	// 定义转码分辨率列表
+	// 2.定义分辨率列表，在这里先将每个分辨率的视频源都设置为初始源
 	resolutions := []int{1080, 720, 480, 360}
 	if height >= 1080 {
 		resolutions = resolutions[1:]
 		videoContribution.Video = videoSrc
-	} else if height >= 720 && height < 1080 {
+	} else if height >= 720 {
 		resolutions = resolutions[2:]
 		videoContribution.Video720p = videoSrc
-	} else if height >= 480 && height < 720 {
+	} else if height >= 480 {
 		resolutions = resolutions[3:]
 		videoContribution.Video480p = videoSrc
-	} else if height >= 360 && height < 480 {
+	} else if height >= 360 {
 		resolutions = resolutions[4:]
 		videoContribution.Video360p = videoSrc
 	} else {
@@ -121,12 +121,13 @@ func CreateVideoContribution(data *receive.CreateVideoContributionReceiveStruct,
 		return nil, fmt.Errorf("保存失败")
 	}
 
-	//进行视频转码
+	// 3.进行视频转码
 	go func(width, height int, video *video.VideosContribution) {
+		// 3.1 本地上传的视频，使用 ffmpeg 处理
 		if data.VideoUploadType == "local" {
-			//本地ffmpeg 处理
 			inputFile := data.Video
 			sr := strings.Split(inputFile, ".")
+			//对每个清晰度选项，将视频转为对应的清晰度并保存src
 			for _, r := range resolutions {
 				// 计算转码后的宽和高需要取整
 				w := int(math.Ceil(float64(r) / float64(height) * float64(width)))
@@ -135,7 +136,6 @@ func CreateVideoContribution(data *receive.CreateVideoContributionReceiveStruct,
 					continue
 				}
 				dst := sr[0] + fmt.Sprintf("_output_%dp."+sr[1], r)
-				// TODO: 调用转码接口，将转码后的视频保存到指定目录
 				cmd := exec.Command("ffmpeg",
 					"-i",
 					inputFile,
@@ -153,7 +153,7 @@ func CreateVideoContribution(data *receive.CreateVideoContributionReceiveStruct,
 					dst)
 				err = cmd.Run()
 				if err != nil {
-					global.Logger.Errorf("视频 :%s :转码%d*%d失败 cmd : %s ,err :%s", inputFile, w, h, cmd, err)
+					global.Logger.Errorf("视频: %s :转码 %d*%d 失败。command : %s ,err info :%s", inputFile, w, h, cmd, err)
 					continue
 				}
 				src, _ := json.Marshal(common.Img{
@@ -176,6 +176,7 @@ func CreateVideoContribution(data *receive.CreateVideoContributionReceiveStruct,
 				global.Logger.Infof("视频 :%s : 转码%d*%d成功", inputFile, w, h)
 			}
 		} else if data.VideoUploadType == "aliyunOss" && global.Config.AliyunOss.IsOpenTranscoding {
+			// 3.2 上传到阿里云的视频，调用iceClient提供的接口进行处理，并调用AliyunTranscodingMedia回调函数进行处理
 			inputFile := data.Video
 			sr := strings.Split(inputFile, ".")
 			//云转码处理
@@ -439,7 +440,9 @@ func GetVideoBarrage(data *receive.GetVideoBarrageReceiveStruct) (results interf
 
 func GetVideoBarrageList(data *receive.GetVideoBarrageListReceiveStruct) (results interface{}, err error) {
 	//获取视频弹幕
-	list := new(barrage.BarragesList)
+	list := &barrage.BarragesList{}
+
+	//原本的查redis缓存
 	key := fmt.Sprintf("%s%s", consts.VideoBarragePrefix, data.ID)
 	result, err := global.RedisDb.Get(key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -452,16 +455,20 @@ func GetVideoBarrageList(data *receive.GetVideoBarrageListReceiveStruct) (result
 		}
 		global.Logger.Errorf("获取视频%v弹幕信息时，解封装错误", data.ID)
 	}
+
 	videoID, _ := strconv.ParseUint(data.ID, 0, 19)
 	if !list.GetVideoBarrageByID(uint(videoID)) {
 		return nil, fmt.Errorf("查询失败")
 	}
+
+	//set redis
 	bytes, err := json.Marshal(list)
 	if err == nil {
 		global.RedisDb.Set(key, bytes, 5*time.Second)
 	} else {
 		global.Logger.Errorf("封装视频%v弹幕信息错误:%v", data.ID, err)
 	}
+
 	res := response.GetVideoBarrageListResponse(list)
 	return res, nil
 }
@@ -556,4 +563,85 @@ func LikeVideo(data *receive.LikeVideoReceiveStruct, uid uint) (results interfac
 	}
 
 	return "操作成功", nil
+}
+
+func LikeVideoComment(data *receive.LikeVideoCommentReqStruct) (results interface{}, err error) {
+	//todo:在这里实现对点赞的聚合写入，以及更新redis中评论的点赞数
+	//先不管怎么获取到评论，直接更新redis并实现聚合写入先
+	zsetKey := fmt.Sprintf("%s%s", consts.VideoCommentZSetPrefix, strconv.Itoa(data.VideoCommentId))
+	hashKey := fmt.Sprintf("%s%s", consts.VideoCommentHashPrefix, strconv.Itoa(data.VideoCommentId))
+
+	//判断是否在zset里应该用整条评论内容做member值，因为放进去的时候就是这样放的
+	_, err = global.RedisDb.HGet(hashKey, strconv.Itoa(data.VideoCommentId)).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		global.Logger.Errorf("在hash里查询评论点赞数failed:%v", err)
+	}
+	if err == redis.Nil { //说明这条评论没有放进hash中去
+		global.Logger.Infof("向hash和zset里添加id=%d的评论", data.VideoCommentId)
+		com := &comments.Comment{}
+		if err := global.Db.Model(&comments.Comment{}).Where("id = ?", data.VideoCommentId).Find(&com).Error; err != nil {
+			global.Logger.Errorf("从数据库查询id=%d的评论内容失败: %v", data.VideoCommentId, err)
+		}
+		com.Heat++
+		_, err := global.RedisDb.HSet(hashKey, strconv.Itoa(data.VideoCommentId), com).Result()
+		if err != nil {
+			global.Logger.Errorf("向hash中放入id=%d的评论内容失败: %v", data.VideoCommentId, err)
+		}
+
+		jsonComment, _ := json.Marshal(com)
+		_, err = global.RedisDb.ZAdd(zsetKey, redis.Z{
+			Member: jsonComment,
+			Score:  float64(com.Heat),
+		}).Result()
+		if err != nil {
+			global.Logger.Errorf("在zset里增加评论 %v failed:%v", com, err)
+		}
+	} else {
+		global.Logger.Infof("更新id=%d的评论", data.VideoCommentId)
+		//根据commentId从hash中拿到评论内容，然后将其点赞数+1
+		result, err := global.RedisDb.HGet(hashKey, strconv.Itoa(data.VideoCommentId)).Result()
+		if err != nil {
+			global.Logger.Errorf("从hash中获取id=%d的评论failed:%v", data.VideoCommentId, err)
+		}
+		_, err = global.RedisDb.ZIncrBy(zsetKey, 1, result).Result()
+		if err != nil {
+			global.Logger.Errorf("向zset中评论 ： %v 的热度+1failed: %v", result, err)
+		}
+
+	}
+
+	//_, err = global.RedisDb.ZScore(zsetKey, strconv.Itoa(data.VideoCommentId)).Result()
+	//if err != nil && !errors.Is(err, redis.Nil) {
+	//	global.Logger.Errorf("在zset里查询评论点赞数failed:%v", err)
+	//}
+	//
+	//if err == redis.Nil {
+	//	//zset里不存在这条评论,查到这条评论的信息然后放入zset
+	//	com := &comments.Comment{}
+	//	com.Find(uint(data.VideoCommentId))
+	//	com.Heat++
+	//	//转为json存储
+	//	commentJson, err := json.Marshal(com)
+	//	if err != nil {
+	//		global.Logger.Errorf("将评论 %d 转为json失败:%v", data.VideoCommentId, err)
+	//	}
+	//	//添加到zset里
+	//	_, err = global.RedisDb.ZAdd(zsetKey, redis.Z{
+	//		Score:  float64(com.Heat),
+	//		Member: commentJson, //member是一整条的评论内容
+	//	}).Result()
+	//	global.Logger.Infof("将id=%d的评论放入zset中去", data.VideoCommentId)
+	//	if err != nil {
+	//		global.Logger.Errorf("在zset里增加评论 %v 数failed:%v", com, err)
+	//	}
+	//
+	//} else {
+	//	//存在这条评论，直接将被赞数+1
+	//	_, err := global.RedisDb.ZIncrBy(zsetKey, 1, strconv.Itoa(data.VideoCommentId)).Result()
+	//	if err != nil {
+	//		global.Logger.Errorf("增加zset里id= %d 的评论被赞数failed: %v", data.VideoCommentId, err)
+	//	}
+	//	global.Logger.Infof("将zset中id=%d的评论热度+1", data.VideoCommentId)
+	//}
+	return 1, nil
 }

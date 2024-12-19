@@ -41,4 +41,7 @@ const (
 	VideoBarragePrefix = "videoBarrageOf_" //查询视频的弹幕信息
 
 	UniqueVideoRecommendPrefix = "uniqueVideoRecommendPrefix_"
+
+	VideoCommentZSetPrefix = "VideoCommentZSetPrefix_" //zset中一个视频的key
+	VideoCommentHashPrefix = "VideoCommentHashPrefix_"
 )

@@ -17,6 +17,7 @@ type Comment struct {
 	CommentID      uint   `json:"comment_id" gorm:"column:comment_id"`
 	CommentUserID  uint   `json:"comment_user_id" gorm:"column:comment_user_id"`
 	CommentFirstID uint   `json:"comment_first_id" gorm:"column:comment_first_id"`
+	Heat           int    `json:"heat" gorm:"column:heat"` //被赞数，即热度
 
 	UserInfo  users.User `json:"user_info" gorm:"foreignKey:Uid"`
 	VideoInfo VideoInfo  `json:"video_info" gorm:"foreignKey:VideoID"`

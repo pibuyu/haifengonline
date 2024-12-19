@@ -95,6 +95,7 @@ func GetVideoContributionByIDResponse(vc *video.VideosContribution, recommendVid
 			Uid:              v.UserInfo.ID,
 			Username:         v.UserInfo.Username,
 			Photo:            photo,
+			Heat:             v.Heat,
 		})
 	}
 
@@ -205,6 +206,7 @@ type commentsInfo struct {
 	Photo            string           `json:"photo"`
 	CommentUserID    uint             `json:"comment_user_id"`
 	CommentUserName  string           `json:"comment_user_name"`
+	Heat             int              `json:"heat"`
 	LowerComments    commentsInfoList `json:"lowerComments"`
 }
 

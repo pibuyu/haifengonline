@@ -169,7 +169,6 @@ func (vl *VideosContributionList) GetHoneVideoList(info common.PageInfo) error {
 		if err != nil {
 			global.Logger.Errorf("get bitmap failed:%v", err)
 		}
-		global.Logger.Infof("打印一下获取到的bit结果：%v", result)
 		if result == 1 {
 			skipVideos = append(skipVideos, video)
 			continue

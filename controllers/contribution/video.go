@@ -24,8 +24,6 @@ func (c Controllers) CreateVideoContribution(ctx *gin.Context) {
 	uid := ctx.GetUint("uid")
 
 	if rec, err := controllers.ShouldBind(ctx, new(receive.CreateVideoContributionReceiveStruct)); err == nil {
-		//global.Logger.Infof("传递过来的定时任务的时间为%s", rec.DateTime)
-
 		results, err := contribution.CreateVideoContribution(rec, uid)
 		if err != nil {
 			global.Logger.Errorf("保存视频信息失败：%v", err)
@@ -177,6 +175,13 @@ func (c Controllers) LikeVideo(ctx *gin.Context) {
 	uid := ctx.GetUint("uid")
 	if rec, err := controllers.ShouldBind(ctx, new(receive.LikeVideoReceiveStruct)); err == nil {
 		results, err := contribution.LikeVideo(rec, uid)
+		c.Response(ctx, results, err)
+	}
+}
+
+func (c Controllers) LikeVideoComment(ctx *gin.Context) {
+	if rec, err := controllers.ShouldBind(ctx, new(receive.LikeVideoCommentReqStruct)); err == nil {
+		results, err := contribution.LikeVideoComment(rec)
 		c.Response(ctx, results, err)
 	}
 }

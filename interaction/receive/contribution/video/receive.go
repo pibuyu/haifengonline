@@ -85,3 +85,7 @@ type GetLastWatchTimeReqStruct struct {
 type LikeVideoReceiveStruct struct {
 	VideoID uint `json:"video_id"`
 }
+type LikeVideoCommentReqStruct struct {
+	VideoCommentId int  `json:"video_comment_id"`
+	VideoId        uint `json:"video_id"`
+}
