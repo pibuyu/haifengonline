@@ -11,7 +11,6 @@ import (
 	"haifengonline/global/database/mysql"
 	RedisDbFun "haifengonline/global/database/redis"
 	log "haifengonline/global/logrus"
-	"haifengonline/global/msgQueue"
 )
 
 // 在这里执行那些实例化的init函数，然后返回预定义的对象呗
@@ -21,9 +20,9 @@ func init() {
 	Db = mysql.ReturnsInstance()
 	Config = config.ReturnsInstance()
 	//普通队列的生产者
-	NormalProducer = msgQueue.ReturnsNormalInstance()
+	//NormalProducer = msgQueue.ReturnsNormalInstance()
 	//延迟队列的生产者
-	DelayProducer = msgQueue.ReturnsDelayInstance()
+	//DelayProducer = msgQueue.ReturnsDelayInstance()
 	//构造一个敏感词过滤器对象
 	Filter = sensitiveWordsFilter.InitFilter()
 }

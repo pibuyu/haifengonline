@@ -130,15 +130,12 @@ func ReturnsInstance() *Info {
 	}
 
 	//msgQueue config;Config.KafkaConfig = &KafkaConfigStruct{}给config字段赋值要在mapto映射之前，不然会报空值错误（没有这个字段，更没法映射值到上面去）
-	//todo:新增加的配置信息要在这里映射到config.Config属性中去才生效啊
 	Config.KafkaConfig = &KafkaConfigStruct{}
 	err = cfg.Section("kafka").MapTo(Config.KafkaConfig)
 	if err != nil {
 		log.Fatalf("kafka读取配置文件错误: %v \n", err)
 	}
-	//log.Println("kafka读取到的配置topic为", Config.KafkaConfig.Server)
 
-	//log.Println("读取到的kafka配置信息的topic为", Config)
 	//redis configZ
 	Config.RConfig = &RConfigStruct{}
 	err = cfg.Section("redis").MapTo(Config.RConfig)

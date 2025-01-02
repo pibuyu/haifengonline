@@ -2,7 +2,6 @@ package crons
 
 import (
 	"bufio"
-	"haifengonline/Init/kafkaConsumer"
 	"haifengonline/consts"
 	"haifengonline/global"
 	"haifengonline/models/cron_events"
@@ -24,8 +23,8 @@ var job *cron.Cron
 func InitCrons() {
 
 	//在这里启动消费者
-	kafkaConsumer.StartNormalConsumer()
-	kafkaConsumer.StartDelayConsumer()
+	//kafkaConsumer.StartNormalConsumer()
+	//kafkaConsumer.StartDelayConsumer()
 
 	job = cron.New(cron.WithSeconds())
 

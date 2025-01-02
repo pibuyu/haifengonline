@@ -85,7 +85,7 @@ func (lre *UserChannel) Writer() {
 
 // Read 读取数据
 func (lre *UserChannel) Read() {
-	//链接断开进行离线(应该是用于用户直接退出了网站，断开了ws连接？？)
+	//链接断开进行离线(用户直接退出了网站，断开ws连接)
 	defer func() {
 		Severe.Cancellation <- lre
 		err := lre.Socket.Close()
