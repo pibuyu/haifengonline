@@ -14,16 +14,16 @@ func AliyunTranscodingMedia(data *receive.AliyunMediaCallback[receive.AliyunTran
 	taskInfo := new(transcodingTask.TranscodingTask)
 	err = taskInfo.GetInfoByTaskID(data.MessageBody.ParentJobId)
 	if err != nil {
-		global.Logger.Errorf("阿里云媒体服务视频转码回调失败，任务id %s", data.MessageBody.Jobs)
+		global.Logger.Errorf("阿里云媒体服务视频转码回调失败，任务id: %s", data.MessageBody.Jobs)
 		return nil, nil
-
 	}
+	//校验response中的状态字段
 	if taskInfo.ID <= 0 {
-		global.Logger.Errorf("阿里云媒体服务视频转码回调失败 : 任务不存在，任务id %s", data.MessageBody.Jobs)
+		global.Logger.Errorf("阿里云媒体服务视频转码回调失败 : 任务不存在，任务id: %s", data.MessageBody.Jobs)
 		return nil, nil
 	}
 	if taskInfo.Status == 1 {
-		global.Logger.Infof("阿里云媒体服务视频转码回调已经处理无需处理，任务id %s", data.MessageBody.Jobs)
+		global.Logger.Infof("阿里云媒体服务视频转码回调已经处理无需处理，任务id: %s", data.MessageBody.Jobs)
 		return nil, nil
 	}
 	if data.MessageBody.Status != "Success" {

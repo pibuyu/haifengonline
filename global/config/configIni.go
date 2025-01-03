@@ -109,27 +109,21 @@ func getConfigPath() string {
 }
 
 func ReturnsInstance() *Info {
-	Config.SqlConfig = &SqlConfigStruct{}
-	//正常go run main.go需要用这个配置文件路径
-	//path := filepath.ToSlash("./config/config.ini")
-
-	//跑测试类需要用下面这个配置文件路径
-	//path := filepath.ToSlash("../config/config.ini")
-
-	//todo:尝试统一配置文件的路径
+	//统一配置文件的路径
 	path := getConfigPath()
-
 	cfg, err = ini.Load(path)
 	if err != nil {
 		log.Fatalf("配置文件不存在,请检查环境: %v \n", err)
 	}
 
+	Config.SqlConfig = &SqlConfigStruct{}
 	err = cfg.Section("mysql").MapTo(Config.SqlConfig)
 	if err != nil {
 		log.Fatalf("Mysql读取配置文件错误: %v \n", err)
 	}
 
-	//msgQueue config;Config.KafkaConfig = &KafkaConfigStruct{}给config字段赋值要在mapto映射之前，不然会报空值错误（没有这个字段，更没法映射值到上面去）
+	//msgQueue config;Config.KafkaConfig = &KafkaConfigStruct{}
+	//给config字段赋值要在mapto映射之前，不然会报空值错误（没有这个字段，更没法映射值到上面去）
 	Config.KafkaConfig = &KafkaConfigStruct{}
 	err = cfg.Section("kafka").MapTo(Config.KafkaConfig)
 	if err != nil {

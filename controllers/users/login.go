@@ -44,7 +44,9 @@ func (lg LoginControllers) Register(ctx *gin.Context) {
 func (lg LoginControllers) SendEmailVerCode(ctx *gin.Context) {
 
 	if rec, err := controllers.ShouldBind(ctx, new(receive.SendEmailVerCodeReceiveStruct)); err == nil {
-		limit := limiter.NewLimiter(rate.Every(1*time.Minute), 1, rec.Email)
+		//针对每个to email进行限制，对一个邮箱短时间内不允许多次请求
+		//r:填充速率,b:bucket的大小
+		limit := limiter.NewLimiter(rate.Every(10*time.Second), 10, rec.Email)
 		if !limit.Allow() {
 			lg.Response(ctx, nil, errors.New("请求过于频繁，请1分钟后再试"))
 			return
