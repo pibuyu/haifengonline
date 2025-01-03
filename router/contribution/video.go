@@ -18,22 +18,19 @@ func (v *VideoRouter) InitVideoRouter(Router *gin.RouterGroup) {
 		contributionRouterNoVerification.GET("/getVideoBarrageList", contributionControllers.GetVideoBarrageList)
 		contributionRouterNoVerification.POST("/getVideoComment", contributionControllers.GetVideoComment)
 		contributionRouterNoVerification.POST("/getVideoCommentCountById", contributionControllers.GetVideoCommentCountById)
-
-		//给评论点赞，先不需要登录
-		contributionRouterNoVerification.POST("/likeVideoComment", contributionControllers.LikeVideoComment)
+		contributionRouterNoVerification.POST("/likeVideoComment", contributionControllers.LikeVideoComment) //给评论点赞，先不需要登录
 	}
 	//非必须登入
 	contributionRouterNotNecessary := Router.Group("contribution").Use(middlewares.VerificationTokenNotNecessary())
 	{
 		contributionRouterNotNecessary.POST("/getVideoContributionByID", contributionControllers.GetVideoContributionByID)
 	}
-	//需要登入 参数携带
+	//body中携带token的请求
 	contributionRouterParameter := Router.Group("contribution").Use(middlewares.VerificationTokenAsParameter())
 	{
 		contributionRouterParameter.POST("/video/barrage/v3/", contributionControllers.SendVideoBarrage)
-
 	}
-	//请求头携带
+	//请求头中携带token的请求
 	contributionRouter := Router.Group("contribution").Use(middlewares.VerificationToken())
 	{
 		contributionRouter.POST("/createVideoContribution", contributionControllers.CreateVideoContribution)
